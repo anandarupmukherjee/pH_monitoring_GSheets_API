@@ -1,0 +1,103 @@
+version: "3"
+
+services:
+   influxdb_wa:
+      image: arm32v7/influxdb
+      container_name: influxdb_wa
+      restart: always
+      ports:
+        - "8086:8086"
+      environment:
+        - INFLUXDB_DB=ph
+        - INFLUXDB_ADMIN_USER=admin
+        - INFLUXDB_ADMIN_PASSWORD=admin
+        - INFLUXDB_USER=pi
+        - INFLUXDB_USER_PASSWORD=raspberry
+      volumes:
+        - influxdb_data:/var/lib/influxdb
+        - /etc/timezone:/etc/timezone:ro
+        - /etc/localtime:/etc/localtime:ro
+      networks:
+         internal:
+            aliases:
+              - influxdb.docker.local
+
+   
+
+
+   grafana_wa:
+      image: grafana/grafana
+      ports: 
+         - "3000:3000"
+      container_name: grafana_wa
+      restart: always
+      volumes:
+         - grafana-db:/var/lib/grafana
+         - grafana-log:/var/log/grafana
+         - grafana-conf:/etc/grafana
+      environment:
+         - GF_AUTH_DISABLE_LOGIN_FORM=true
+         - GF_AUTH_ANONYMOUS_ENABLED=true
+         - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+         - GF_SECURITY_ALLOW_EMBEDDING=true
+      networks:
+           internal:
+              aliases:
+                - grafana.docker.local
+      depends_on:
+           - influxdb_wa
+
+
+
+   data_collection_python:
+       build: ./data_collection_ph
+       container_name: ph_data
+       privileged: true
+       restart: always
+       volumes:
+           - /var/logs/phSensor:/var/logs/phSensor
+           - /etc/timezone:/etc/timezone:ro
+           - /etc/localtime:/etc/localtime:ro
+       depends_on:
+           - influxdb_wa
+       networks:
+            internal:
+               aliases:
+                 - data_collection.docker.local
+
+
+   data_collection_gsheet:
+       build: ./data_collection_gsheets
+       container_name: gsheet_data
+       privileged: true
+       restart: always
+       ports:
+           - "9000:9000"
+         #   - "8086:8086"
+       environment:
+           - BASE_IDX=16
+       volumes:
+           - ./data_collection_gsheets:/app/
+           - /var/logs/gsheets:/var/logs/gsheets
+           - /etc/timezone:/etc/timezone:ro
+           - /etc/localtime:/etc/localtime:ro
+       depends_on:
+           - influxdb_wa
+       networks:
+            internal:
+               aliases:
+                 - data_collection_gs.docker.local
+
+
+
+networks:
+     internal:
+
+volumes:
+     grafana-db:
+        driver: local
+     grafana-log:
+        driver: local
+     grafana-conf:
+        driver: local
+     influxdb_data:
