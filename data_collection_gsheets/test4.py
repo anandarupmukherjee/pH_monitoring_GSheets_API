@@ -89,7 +89,7 @@ def query_influxdb_last_record(url, database, username, password, measurement):
 
 
 def push_gsheets(range_cell, val):
-    logger.info("range-->", range_cell)
+    logger.info(f"range-->{range_cell}")
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -162,13 +162,13 @@ while True:
         ph_i = result['ph']
         # threshold_i = result['threshold']
         
-        logger.info("Timestamp:", timestamp_i)
-        logger.info("Temperature:", temp_i)
-        logger.info("pH:", ph_i)
+        logger.info(f"Timestamp: {timestamp_i}")
+        logger.info(f"Temperature: {temp_i}")
+        logger.info(f"pH: {ph_i}")
         # print("Threshold:", threshold_i)
         date_i, time_i = timestamp_i.split("T")
         time_i = time_i.split("Z")[0]# print(datetime.datetime.fromtimestamp(int(t1)).strftime('%H:%M'))
-        logger.info(time_i)
+        # logger.info(time_i)
 
         
 
