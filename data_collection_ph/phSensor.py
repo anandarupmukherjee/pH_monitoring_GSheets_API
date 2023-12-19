@@ -4,7 +4,7 @@ import sys
 import os
 import time
 from smbus2 import SMBus
-from DFRobot_PH import DFRobot_PH
+from DFRobot_PH_AnandCustom import DFRobot_PH
 # from DFRobot_EC import DFRobot_EC
 from mlx90614 import MLX90614
 from DFRobot_ADS1115 import ADS1115
@@ -58,6 +58,7 @@ class MLX90614_temp:
 #temp_s = MLX90614_temp() 
 machine_name="vat1"
 thresholdPH=7
+ph_values = []
 
 while True :
     #Set the IIC address
@@ -69,11 +70,25 @@ while True :
     ads1115.set_gain(ADS1115_REG_CONFIG_PGA_6_144V)
     #Get the Digital Value of Analog of selected channel
     adc0 = ads1115.read_voltage(0)
-    PH = ph.read_PH(adc0['r'],temperature)
+    PH = ph.read_PH(adc0['r'], temperature)
     logger.info(f"BrewTemp: {BrewTemp}")
     logger.info(f"PH: {PH}")
-    logger.info("---------------") 
+    logger.info("---------------")
 
-    var = "curl -i -XPOST 'http://influxdb.docker.local:8086/write?db=ph' --data '"+machine_name+" temp="+str(BrewTemp)+",ph="+str(PH)+",thresholdPH="+str(thresholdPH)+"'"
-    os.system(var)
+    # Append the new PH value to the list
+    ph_values.append(PH)
+
+    # Check if the list has 10 values
+    if len(ph_values) == 30:
+        # Calculate the average PH value
+        average_ph = sum(ph_values) / len(ph_values)
+        logger.info(f"Average PH: {average_ph}")
+
+        # Send the average value
+        var = "curl -i -XPOST 'http://influxdb.docker.local:8086/write?db=ph' --data '" + machine_name + " temp=" + str(BrewTemp) + ",ph=" + str(average_ph) + ",thresholdPH=" + str(thresholdPH) + "'"
+        os.system(var)
+
+        # Reset the pH values list for next readings
+        ph_values = []
+
     time.sleep(1.0)
